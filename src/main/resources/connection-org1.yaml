@@ -1,0 +1,35 @@
+---
+name: network-org1
+version: 1.0.0
+client:
+  organization: Org1
+  connection:
+    timeout:
+      peer:
+        endorser: '300'
+organizations:
+  Org1:
+    mspid: Org1MSP
+    peers:
+      - peer0.org1.coinkaraoke.com
+    certificateAuthorities:
+      - ca.org1.coinkaraoke.com
+peers:
+  peer0.org1.coinkaraoke.com:
+    url: grpcs://localhost:7051  # 수정될 필요 있음
+    tlsCACerts:
+      pem: |
+        organizations/peerOrganizations/org1.coinkaraoke.com/tlsca/tlsca.org1.coinkaraoke.com-cert.pem
+    grpcOptions:
+      ssl-target-name-override: peer0.org1.coinkaraoke.com
+      hostnameOverride: peer0.org1.coinkaraoke.com
+certificateAuthorities:
+  ca.org1.coinkaraoke.com:
+    url: https://localhost:7054  # 수정될 필요 있음
+    caName: ca-org1
+    tlsCACerts:
+      pem:
+        - |
+          organizations/peerOrganizations/org1.coinkaraoke.com/ca/ca.org1.coinkaraoke.com-cert.pem
+    httpOptions:
+      verify: false
