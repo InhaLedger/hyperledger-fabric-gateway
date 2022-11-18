@@ -1,25 +1,6 @@
 package com.inha.coinkaraoke.users;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.BDDMockito.given;
-import static org.mockito.BDDMockito.then;
-import static org.mockito.Mockito.times;
-
 import com.inha.coinkaraoke.users.impl.HFCAServiceImpl;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.math.BigInteger;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.Date;
-import java.util.Locale;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
@@ -45,10 +26,27 @@ import org.hyperledger.fabric_ca.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric_ca.sdk.exception.RegistrationException;
 import org.hyperledger.fabric_ca.sdk.exception.RevocationException;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.math.BigInteger;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.Date;
+import java.util.Locale;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 public class HFCAServiceTest {
@@ -59,65 +57,89 @@ public class HFCAServiceTest {
     private HFCAClient hfcaClient;
 
 
-    @DisplayName("ca에 관리자를 등록한다.")
-    @Test
-    public void enrollAdminToCATest()
-            throws InvalidArgumentException, EnrollmentException, IOException {
+    @Nested
+    public class EnrollAdminTest {
+        @DisplayName("ca에 관리자를 등록한다.")
+        @Test
+        public void enrollAdminToCATest()
+                throws InvalidArgumentException, EnrollmentException, IOException {
 
-        //given
-        X509Credentials x509Credentials = new X509Credentials();
-        Enrollment expectedEnrollment =
-                new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
-        given(hfcaClient.enroll(any(), any())).willReturn(expectedEnrollment);
-        Wallet wallet = Wallets.newInMemoryWallet();
+            //given
+            X509Credentials x509Credentials = new X509Credentials();
+            Enrollment expectedEnrollment =
+                    new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
+            given(hfcaClient.enroll(any(), any())).willReturn(expectedEnrollment);
+            Wallet wallet = Wallets.newInMemoryWallet();
 
-        //when
-        hfcaService.enrollAdmin(hfcaClient, wallet, "org1");
+            //when
+            hfcaService.enrollAdmin(hfcaClient, wallet, "org1");
 
-        //then
-        then(hfcaClient).should(times(1)).enroll(any(), any());
-        assertThat(((X509Identity)wallet.get("admin")).getCertificate())
-                .isEqualTo(x509Credentials.certificate);
+            //then
+            then(hfcaClient).should(times(1)).enroll(any(), any());
+            assertThat(((X509Identity)wallet.get("admin")).getCertificate())
+                    .isEqualTo(x509Credentials.certificate);
+        }
+
+        @DisplayName("지갑에 관리자 정보가 등록되어 있으면 실패한다.")
+        @Test
+        public void failToEnrollAdmin()
+                throws CertificateException, IOException, InvalidArgumentException, EnrollmentException {
+
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            X509Credentials x509Credentials = new X509Credentials();
+            wallet.put("admin", Identities.newX509Identity("org1",
+                    new X509Enrollment(x509Credentials.getPrivateKey(),
+                            x509Credentials.getCertificatePem())));
+            //when
+            hfcaService.enrollAdmin(hfcaClient, wallet, "org1");
+
+            //then
+            then(hfcaClient).should(times(0)).enroll(any(), any());
+        }
     }
 
-    @DisplayName("지갑에 관리자 정보가 등록되어 있으면 실패한다.")
-    @Test
-    public void failToEnrollAdmin()
-            throws CertificateException, IOException, InvalidArgumentException, EnrollmentException {
+    @Nested
+    public class EnrollUserTest {
+        @DisplayName("새로운 유저를 CA에 등록하고 지갑에 identity를 추가한다.")
+        @Test
+        public void successToRegisterAndEnrollUser()
+                throws RegistrationException, InvalidArgumentException, EnrollmentException, IOException {
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            enrollAdmin(wallet);
+            given(hfcaClient.register(any(), any())).willReturn("userSecretCode");
+            X509Credentials x509Credentials = new X509Credentials();
+            Enrollment expectedEnrollment =
+                    new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
+            given(hfcaClient.enroll(any(), any())).willReturn(expectedEnrollment);
 
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        X509Credentials x509Credentials = new X509Credentials();
-        wallet.put("admin", Identities.newX509Identity("org1",
-                new X509Enrollment(x509Credentials.getPrivateKey(),
-                        x509Credentials.getCertificatePem())));
-        //when
-        hfcaService.enrollAdmin(hfcaClient, wallet, "org1");
+            //when
+            hfcaService.registerAndEnrollUser("user1", hfcaClient, wallet, "org1");
 
-        //then
-        then(hfcaClient).should(times(0)).enroll(any(), any());
+            //then
+            then(hfcaClient).should(times(1)).register(any(), any());
+            then(hfcaClient).should(times(1)).enroll(any(), any());
+        }
+
+        @DisplayName("이미 유저가 등록되어 있으면 아무일도 일어나지 않는다.")
+        @Test
+        public void userAlreadyRegisteredAndEnrolled()
+                throws InvalidArgumentException, EnrollmentException, RegistrationException, IOException {
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            enrollAdmin(wallet);
+            enrollUser("user1", wallet);
+
+            //when
+            hfcaService.registerAndEnrollUser("user1", hfcaClient, wallet, "org1");
+
+            //then
+            then(hfcaClient).should(times(0)).register(any(), any());
+            then(hfcaClient).should(times(0)).enroll(any(), any());
+        }
     }
 
-    @DisplayName("새로운 유저를 CA에 등록하고 지갑에 identity를 추가한다.")
-    @Test
-    public void successToRegisterAndEnrollUser()
-            throws RegistrationException, InvalidArgumentException, EnrollmentException, IOException {
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        enrollAdmin(wallet);
-        given(hfcaClient.register(any(), any())).willReturn("userSecretCode");
-        X509Credentials x509Credentials = new X509Credentials();
-        Enrollment expectedEnrollment =
-                new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
-        given(hfcaClient.enroll(any(), any())).willReturn(expectedEnrollment);
-
-        //when
-        hfcaService.registerAndEnrollUser("user1", hfcaClient, wallet, "org1");
-
-        //then
-        then(hfcaClient).should(times(1)).register(any(), any());
-        then(hfcaClient).should(times(1)).enroll(any(), any());
-    }
 
     private void enrollAdmin(Wallet wallet) throws IOException {
         /* enroll admin */
@@ -126,22 +148,6 @@ public class HFCAServiceTest {
         wallet.put("admin", Identities.newX509Identity("org1", x509Credentials.certificate, x509Credentials.getPrivateKey()));
     }
 
-    @DisplayName("이미 유저가 등록되어 있으면 아무일도 일어나지 않는다.")
-    @Test
-    public void userAlreadyRegisteredAndEnrolled()
-            throws InvalidArgumentException, EnrollmentException, RegistrationException, IOException {
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        enrollAdmin(wallet);
-        enrollUser("user1", wallet);
-
-        //when
-        hfcaService.registerAndEnrollUser("user1", hfcaClient, wallet, "org1");
-
-        //then
-        then(hfcaClient).should(times(0)).register(any(), any());
-        then(hfcaClient).should(times(0)).enroll(any(), any());
-    }
 
     private void enrollUser(String userId, Wallet wallet) throws IOException {
 
@@ -150,57 +156,65 @@ public class HFCAServiceTest {
         wallet.put(userId, Identities.newX509Identity("org1", x509Credentials.certificate, x509Credentials.getPrivateKey()));
     }
 
-    @DisplayName("등록된 유저의 인증서를 파기한다.")
-    @Test
-    public void revokeCertificate()
-            throws IOException, InvalidArgumentException, RevocationException {
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        enrollAdmin(wallet);
-        enrollUser("user1", wallet);
+    @Nested
+    public class RevokeTest {
+        @DisplayName("등록된 유저의 인증서를 파기한다.")
+        @Test
+        public void revokeCertificate()
+                throws IOException, InvalidArgumentException, RevocationException {
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            enrollAdmin(wallet);
+            enrollUser("user1", wallet);
 
-        //then
-        hfcaService.revokeUser("user1", "no_reason", hfcaClient, wallet, "org1");
+            //then
+            hfcaService.revokeUser("user1", "no_reason", hfcaClient, wallet, "org1");
 
-        //then
-        then(hfcaClient).should(times(1)).revoke(any(), anyString(), anyString());
+            //then
+            then(hfcaClient).should(times(1)).revoke(any(), anyString(), anyString());
+        }
+
+        @DisplayName("등록되지 않은 인증서를 파기하려고 하면 아무일도 일어나지 않는다.")
+        @Test
+        public void nothingHappenToRevokeNoOne()
+                throws IOException, InvalidArgumentException, RevocationException {
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            enrollAdmin(wallet);
+
+            //then
+            hfcaService.revokeUser("user1", "no_reason", hfcaClient, wallet, "org1");
+
+            //then
+            then(hfcaClient).should(times(0)).revoke(any(), anyString(), anyString());
+        }
     }
 
-    @DisplayName("등록되지 않은 인증서를 파기하려고 하면 아무일도 일어나지 않는다.")
-    @Test
-    public void nothingHappenToRevokeNoOne()
-            throws IOException, InvalidArgumentException, RevocationException {
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        enrollAdmin(wallet);
+    @Nested
+    public class ReenrollTest {
 
-        //then
-        hfcaService.revokeUser("user1", "no_reason", hfcaClient, wallet, "org1");
+        @DisplayName("사용자 인증서를 재등록한다.")
+        @Test
+        public void reenrollUser() throws IOException, InvalidArgumentException, EnrollmentException {
 
-        //then
-        then(hfcaClient).should(times(0)).revoke(any(), anyString(), anyString());
+            //given
+            Wallet wallet = Wallets.newInMemoryWallet();
+            enrollAdmin(wallet);
+            enrollUser("user1", wallet);
+
+            X509Credentials x509Credentials = new X509Credentials();
+            Enrollment expectedEnrollment =
+                    new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
+            given(hfcaClient.reenroll(any())).willReturn(expectedEnrollment);
+
+            //when
+            hfcaService.reEnroll("user1", hfcaClient, wallet, "org1");
+
+            //then
+            then(hfcaClient).should(times(1)).reenroll(any());
+        }
     }
 
-    @DisplayName("사용자 인증서를 재등록한다.")
-    @Test
-    public void reenrollUser() throws IOException, InvalidArgumentException, EnrollmentException, CertificateException {
-
-        //given
-        Wallet wallet = Wallets.newInMemoryWallet();
-        enrollAdmin(wallet);
-        enrollUser("user1", wallet);
-
-        X509Credentials x509Credentials = new X509Credentials();
-        Enrollment expectedEnrollment =
-                new X509Enrollment(x509Credentials.getPrivateKey(),x509Credentials.getCertificatePem());
-        given(hfcaClient.reenroll(any())).willReturn(expectedEnrollment);
-
-        //when
-        hfcaService.reEnroll("user1", hfcaClient, wallet, "org1");
-
-        //then
-        then(hfcaClient).should(times(1)).reenroll(any());
-    }
 
     public static class X509Credentials {
 
@@ -276,5 +290,3 @@ public class HFCAServiceTest {
         }
     }
 }
-
-

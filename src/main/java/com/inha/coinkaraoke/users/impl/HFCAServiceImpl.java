@@ -1,9 +1,7 @@
 package com.inha.coinkaraoke.users.impl;
 
 import com.inha.coinkaraoke.users.HFCAService;
-import com.inha.coinkaraoke.wallets.exceptions.WalletProcessException;
-import java.io.IOException;
-import java.security.cert.CertificateException;
+import com.inha.coinkaraoke.users.exceptions.WalletProcessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Identities;
@@ -21,6 +19,9 @@ import org.hyperledger.fabric_ca.sdk.exception.InvalidArgumentException;
 import org.hyperledger.fabric_ca.sdk.exception.RegistrationException;
 import org.hyperledger.fabric_ca.sdk.exception.RevocationException;
 import org.springframework.stereotype.Service;
+
+import java.io.IOException;
+import java.security.cert.CertificateException;
 
 @Service
 @RequiredArgsConstructor
@@ -85,7 +86,7 @@ public class HFCAServiceImpl implements HFCAService {
         } catch (IOException e) {
             log.error(e.getMessage());
             throw new WalletProcessException();
-        } catch (EnrollmentException | RegistrationException e) {
+        } catch (EnrollmentException | InvalidArgumentException | RegistrationException e) {
             log.error(e.getMessage());
         } catch (Exception e) {
             e.printStackTrace();
@@ -118,23 +119,39 @@ public class HFCAServiceImpl implements HFCAService {
 
         X509Identity userIdentity = (X509Identity) getIdentity(userId, orgWallet);
         GatewayUser user = new GatewayUser(
-                userId, orgMspId, new X509Enrollment(userIdentity.getPrivateKey(),
+                ADMIN_ID, orgMspId, new X509Enrollment(userIdentity.getPrivateKey(),
                 userIdentity.getCertificate().toString()));
 
         Enrollment enrollment;
         try {
+            log.info("try to re-enroll user({})", userId);
             enrollment = orgCAClient.reenroll(user);
-            X509Identity newX509Identity = Identities.newX509Identity(orgMspId, enrollment);
-            orgWallet.remove(userId);
-            orgWallet.put(userId, newX509Identity);
-        } catch (EnrollmentException | CertificateException e) {
-            log.error("error occurred with hyperledger fabric CAs");
+            log.info("success to re-enroll user({})", userId);
+
+        } catch (EnrollmentException e) {
+            log.error("re-enrollment fail for the user({})", userId);
             e.printStackTrace();
+            return;
         } catch (InvalidArgumentException e) {
+            log.error("invalid argument request during re-enrolling the user({})", userId);
             e.printStackTrace();
+            return;
+        }
+
+        X509Identity identity;
+        try {
+            identity = Identities.newX509Identity(orgMspId, enrollment);
+        } catch (CertificateException e) {
+            log.error("re-enrolled certificate for the user({}) is invalid", userId);
+            e.printStackTrace();
+            return;
+        }
+
+        try {
+            orgWallet.put(userId, identity);
         } catch (IOException e) {
-            log.error("file system read/write error expected.");
-            e.printStackTrace();
+            log.error(e.getMessage());
+            throw new WalletProcessException();
         }
     }
 

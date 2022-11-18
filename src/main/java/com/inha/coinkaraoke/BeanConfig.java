@@ -1,16 +1,18 @@
 package com.inha.coinkaraoke;
 
 import com.inha.coinkaraoke.networks.NetworkConfigStore;
-import java.io.IOException;
-import java.nio.file.Path;
 import org.hyperledger.fabric.gateway.impl.identity.FileSystemWalletStore;
 import org.hyperledger.fabric.gateway.spi.WalletStore;
 import org.hyperledger.fabric.sdk.exception.NetworkConfigurationException;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.config.DelegatingWebFluxConfiguration;
+
+import java.io.IOException;
+import java.nio.file.Path;
 
 @Configuration
-public class Config {
+public class BeanConfig extends DelegatingWebFluxConfiguration {
 
 
     @Bean
