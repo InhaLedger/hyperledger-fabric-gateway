@@ -9,8 +9,7 @@ import org.springframework.web.reactive.config.DelegatingWebFluxConfiguration;
 import org.springframework.web.reactive.config.EnableWebFlux;
 import org.springframework.web.reactive.function.server.RouterFunction;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -23,6 +22,8 @@ public class RouterConfig extends DelegatingWebFluxConfiguration {
     @Bean
     public RouterFunction<?> userRouter() {
         return route(POST("/users")
-                        .and(accept(MediaType.APPLICATION_JSON)), userHandler::createUser);
+                        .and(accept(MediaType.APPLICATION_JSON)), userHandler::createUser)
+                .andRoute(DELETE("/users/{orgId}/{userId}"), userHandler::deleteUser)
+                .andRoute(GET("/users/{orgId}/{userId}/account"), userHandler::getUserAccountInfo);
     }
 }
