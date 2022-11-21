@@ -1,6 +1,7 @@
 package com.inha.coinkaraoke.users.impl;
 
 import com.inha.coinkaraoke.users.HFCAService;
+import com.inha.coinkaraoke.users.exceptions.CAException;
 import com.inha.coinkaraoke.users.exceptions.WalletProcessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,8 +31,9 @@ public class HFCAServiceImpl implements HFCAService {
 
     private static final String ADMIN_ID = "admin";
     private static final String ADMIN_PASSWD = "adminpw";
+    private static final String MSP_SUFFIX = "MSP";
 
-    public void enrollAdmin(HFCAClient orgCAClient, Wallet orgWallet, String orgMspId) {
+    public void enrollAdmin(HFCAClient orgCAClient, Wallet orgWallet, String orgId) {
 
         Identity admin = getIdentity(ADMIN_ID, orgWallet);
 
@@ -42,58 +44,59 @@ public class HFCAServiceImpl implements HFCAService {
 
         try {
             Enrollment enrollment = orgCAClient.enroll(ADMIN_ID, ADMIN_PASSWD);  // grpc communicate
-            X509Identity identity = Identities.newX509Identity(orgMspId, enrollment);
+            X509Identity identity = Identities.newX509Identity(orgId + MSP_SUFFIX, enrollment);
 
             orgWallet.put(ADMIN_ID, identity);
 
         } catch (EnrollmentException | InvalidArgumentException | CertificateException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             log.error(e.getMessage());
-            throw new WalletProcessException();
+            throw new CAException(e.getMessage(), e.getCause());
+        } catch (IOException e) {
+            throw new WalletProcessException(e.getMessage());
         }
     }
 
-    private User getAdminUser(Wallet orgWallet, String orgMspId) {
+    private User getAdminUser(HFCAClient hfcaClient, Wallet orgWallet, String orgId) {
         X509Identity admin = (X509Identity) getIdentity(ADMIN_ID, orgWallet);
         if (admin == null) {
-            throw new WalletProcessException("cannot find admin identity!");
+            this.enrollAdmin(hfcaClient, orgWallet, orgId);
+            admin = (X509Identity) getIdentity(ADMIN_ID, orgWallet);
         }
 
         return new GatewayUser(
-                ADMIN_ID, orgMspId, new X509Enrollment(admin.getPrivateKey(), admin.getCertificate().toString()));
+                ADMIN_ID, orgId + MSP_SUFFIX, new X509Enrollment(admin.getPrivateKey(), Identities.toPemString(admin.getCertificate())));
     }
 
-    public void registerAndEnrollUser(String userId, HFCAClient orgCAClient, Wallet orgWallet, String orgMspId) {
+    public void registerAndEnrollUser(String userId, HFCAClient orgCAClient, Wallet orgWallet, String orgId) {
 
         Identity user = getIdentity(userId, orgWallet);
 
         if (user != null) {
-            log.warn(userId, " has already created.");
+            log.warn("{} has already created.",userId);
             return;
         }
 
-        User adminUser = getAdminUser(orgWallet, orgMspId);
+        User adminUser = getAdminUser(orgCAClient, orgWallet, orgId);
 
         try {
             // grpc communicates
             String userSecret = orgCAClient.register(new RegistrationRequest(userId), adminUser);
             Enrollment enrollment = orgCAClient.enroll(userId, userSecret);
 
-            X509Identity identity = Identities.newX509Identity(orgMspId, enrollment);
+            X509Identity identity = Identities.newX509Identity(orgId + MSP_SUFFIX, enrollment);
             orgWallet.put(userId, identity);
 
         } catch (IOException e) {
-            log.error(e.getMessage());
-            throw new WalletProcessException();
+            throw new WalletProcessException(e.getMessage());
         } catch (EnrollmentException | InvalidArgumentException | RegistrationException e) {
             log.error(e.getMessage());
+            throw new CAException(e.getMessage(), e.getCause());
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void revokeUser(String userId, String reason, HFCAClient orgCAClient, Wallet orgWallet, String orgMspId) {
+    public void revokeUser(String userId, String reason, HFCAClient orgCAClient, Wallet orgWallet, String orgId) {
 
         Identity user = getIdentity(userId, orgWallet);
         if (user == null) {
@@ -101,50 +104,35 @@ public class HFCAServiceImpl implements HFCAService {
             return;
         }
 
-        User adminUser = getAdminUser(orgWallet, orgMspId);
+        User adminUser = getAdminUser(orgCAClient, orgWallet, orgId);
 
         try {
             orgCAClient.revoke(adminUser, userId, reason);
-            orgWallet.remove(userId);
 
-        } catch (RevocationException e) {
-            log.error("revocation fail");
-            e.printStackTrace();
-        } catch (InvalidArgumentException | IOException e) {
-            e.printStackTrace();
+        } catch (RevocationException | InvalidArgumentException e) {
+            log.error(e.getMessage());
+            throw new CAException(e.getMessage(), e.getCause());
         }
     }
 
-    public void reEnroll(String userId, HFCAClient orgCAClient, Wallet orgWallet, String orgMspId) {
+    public void reEnroll(String userId, HFCAClient orgCAClient, Wallet orgWallet, String orgId) {
 
         X509Identity userIdentity = (X509Identity) getIdentity(userId, orgWallet);
         GatewayUser user = new GatewayUser(
-                ADMIN_ID, orgMspId, new X509Enrollment(userIdentity.getPrivateKey(),
+                ADMIN_ID, orgId + MSP_SUFFIX, new X509Enrollment(userIdentity.getPrivateKey(),
                 userIdentity.getCertificate().toString()));
 
         Enrollment enrollment;
+        X509Identity identity;
         try {
             log.info("try to re-enroll user({})", userId);
             enrollment = orgCAClient.reenroll(user);
             log.info("success to re-enroll user({})", userId);
 
-        } catch (EnrollmentException e) {
-            log.error("re-enrollment fail for the user({})", userId);
-            e.printStackTrace();
-            return;
-        } catch (InvalidArgumentException e) {
-            log.error("invalid argument request during re-enrolling the user({})", userId);
-            e.printStackTrace();
-            return;
-        }
-
-        X509Identity identity;
-        try {
-            identity = Identities.newX509Identity(orgMspId, enrollment);
-        } catch (CertificateException e) {
-            log.error("re-enrolled certificate for the user({}) is invalid", userId);
-            e.printStackTrace();
-            return;
+            identity = Identities.newX509Identity(orgId + MSP_SUFFIX, enrollment);
+        } catch (EnrollmentException | InvalidArgumentException | CertificateException e) {
+            log.error(e.getMessage());
+            throw new CAException(e.getMessage(), e.getCause());
         }
 
         try {
