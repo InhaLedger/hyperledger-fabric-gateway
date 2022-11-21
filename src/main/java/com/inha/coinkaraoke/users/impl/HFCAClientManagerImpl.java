@@ -1,6 +1,6 @@
 package com.inha.coinkaraoke.users.impl;
 
-import com.inha.coinkaraoke.networks.NetworkConfigStore;
+import com.inha.coinkaraoke.config.NetworkConfigStore;
 import com.inha.coinkaraoke.users.HFCAClientManager;
 import com.inha.coinkaraoke.users.exceptions.CAException;
 import lombok.RequiredArgsConstructor;
