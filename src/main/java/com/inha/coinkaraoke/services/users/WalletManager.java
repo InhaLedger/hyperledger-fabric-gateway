@@ -1,4 +1,4 @@
-package com.inha.coinkaraoke.users;
+package com.inha.coinkaraoke.services.users;
 
 import org.hyperledger.fabric.gateway.Wallet;
 

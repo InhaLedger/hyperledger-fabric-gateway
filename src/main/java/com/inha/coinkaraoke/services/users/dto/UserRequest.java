@@ -1,4 +1,4 @@
-package com.inha.coinkaraoke.users.dto;
+package com.inha.coinkaraoke.services.users.dto;
 
 import lombok.Data;
 

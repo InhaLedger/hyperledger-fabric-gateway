@@ -1,6 +1,6 @@
-package com.inha.coinkaraoke.users;
+package com.inha.coinkaraoke.services.users;
 
-import com.inha.coinkaraoke.users.impl.HFCAServiceImpl;
+import com.inha.coinkaraoke.services.users.impl.HFCAServiceImpl;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;

@@ -1,4 +1,4 @@
-package com.inha.coinkaraoke.users.exceptions;
+package com.inha.coinkaraoke.services.users.exceptions;
 
 import com.inha.coinkaraoke.exceptions.GlobalException;
 import org.springframework.http.HttpStatus;

@@ -1,8 +1,11 @@
-package com.inha.coinkaraoke.users;
+package com.inha.coinkaraoke.handlers;
 
 import com.inha.coinkaraoke.exceptions.BadRequestException;
 import com.inha.coinkaraoke.gateway.GatewayUtils;
-import com.inha.coinkaraoke.users.dto.UserRequest;
+import com.inha.coinkaraoke.services.users.HFCAClientManager;
+import com.inha.coinkaraoke.services.users.HFCAService;
+import com.inha.coinkaraoke.services.users.WalletManager;
+import com.inha.coinkaraoke.services.users.dto.UserRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;

@@ -2,8 +2,8 @@ package com.inha.coinkaraoke.gateway;
 
 import com.inha.coinkaraoke.config.NetworkConfigStore;
 import com.inha.coinkaraoke.exceptions.ChainCodeException;
-import com.inha.coinkaraoke.users.WalletManager;
-import com.inha.coinkaraoke.users.exceptions.WalletProcessException;
+import com.inha.coinkaraoke.services.users.WalletManager;
+import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.fabric.gateway.Contract;

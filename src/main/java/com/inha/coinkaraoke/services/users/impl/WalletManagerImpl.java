@@ -1,7 +1,7 @@
-package com.inha.coinkaraoke.users.impl;
+package com.inha.coinkaraoke.services.users.impl;
 
-import com.inha.coinkaraoke.users.WalletManager;
-import com.inha.coinkaraoke.users.exceptions.WalletProcessException;
+import com.inha.coinkaraoke.services.users.WalletManager;
+import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Wallet;
