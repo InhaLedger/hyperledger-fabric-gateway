@@ -5,6 +5,7 @@ import com.inha.coinkaraoke.exceptions.ChainCodeException;
 import com.inha.coinkaraoke.services.users.WalletManager;
 import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.fabric.gateway.Contract;
 import org.hyperledger.fabric.gateway.ContractException;
@@ -21,6 +22,7 @@ public class GatewayUtils {
     private final String CHANNEL_NAME; // static 으로 하면 설정파일에서 못 읽고, 하드코딩 해야함.
     private final WalletManager walletManager;
     private final NetworkConfigStore networkConfigStore;
+
 
     public Gateway.Builder getBuilder(String orgId, String userId) {
         Wallet orgWallet = walletManager.getWalletOf(orgId);
@@ -45,6 +47,14 @@ public class GatewayUtils {
         try {
             return contract.evaluateTransaction(fxName, args);
         } catch (ContractException e) {
+            throw new ChainCodeException(e.getMessage(), e.getCause());
+        }
+    }
+
+    public byte[] submit(Contract contract, String fxName, String... args) {
+        try {
+            return contract.submitTransaction(fxName, args);
+        } catch (ContractException | TimeoutException | InterruptedException e) {
             throw new ChainCodeException(e.getMessage(), e.getCause());
         }
     }
