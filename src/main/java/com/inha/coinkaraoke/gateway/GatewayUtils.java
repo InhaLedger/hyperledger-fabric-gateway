@@ -4,8 +4,6 @@ import com.inha.coinkaraoke.config.NetworkConfigStore;
 import com.inha.coinkaraoke.exceptions.ChainCodeException;
 import com.inha.coinkaraoke.services.users.WalletManager;
 import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
-import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.fabric.gateway.Contract;
 import org.hyperledger.fabric.gateway.ContractException;
@@ -14,12 +12,15 @@ import org.hyperledger.fabric.gateway.Wallet;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
 @Component
 @RequiredArgsConstructor
 public class GatewayUtils {
 
     @Value("${fabric.network.channel}")
-    private final String CHANNEL_NAME; // static 으로 하면 설정파일에서 못 읽고, 하드코딩 해야함.
+    private String CHANNEL_NAME; // static 으로 하면 설정파일에서 못 읽고, 하드코딩 해야함.
     private final WalletManager walletManager;
     private final NetworkConfigStore networkConfigStore;
 
