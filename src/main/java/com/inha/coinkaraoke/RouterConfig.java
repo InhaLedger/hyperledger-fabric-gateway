@@ -42,6 +42,7 @@ public class RouterConfig extends DelegatingWebFluxConfiguration {
     }
 
     private RouterFunction<ServerResponse> coinRouter() {
-        return route(POST("/coins").and(accept(MediaType.APPLICATION_JSON)), coinHandler::transfer);
+        return route(POST("/coins").and(accept(MediaType.APPLICATION_JSON)), coinHandler::transfer)
+                .andRoute(POST("/coins/new").and(accept(MediaType.APPLICATION_JSON)), coinHandler::mint);
     }
 }
