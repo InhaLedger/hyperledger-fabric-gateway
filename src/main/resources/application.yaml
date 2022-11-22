@@ -1,4 +1,5 @@
 fabric:
   network:
+    channel: "mychannel"
     config:
       Org1: "dev/fabric/organizations/peerOrganizations/org1.coinkaraoke.com/connection-org1.json"

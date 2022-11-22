@@ -14,4 +14,8 @@ public class WalletProcessException extends GlobalException {
     public WalletProcessException(String message) {
         super(ERROR_CODE, message);
     }
+
+    public WalletProcessException(String message, Throwable cause) {
+        super(ERROR_CODE, message, cause);
+    }
 }
