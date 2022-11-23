@@ -1,5 +1,6 @@
 package com.inha.coinkaraoke.services.users.impl;
 
+import com.inha.coinkaraoke.exceptions.BadRequestException;
 import com.inha.coinkaraoke.services.users.HFCAService;
 import com.inha.coinkaraoke.services.users.exceptions.CAException;
 import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
@@ -73,7 +74,7 @@ public class HFCAServiceImpl implements HFCAService {
 
         if (user != null) {
             log.warn("{} has already created.",userId);
-            return;
+            throw new BadRequestException("already created user.");
         }
 
         User adminUser = getAdminUser(orgCAClient, orgWallet, orgId);

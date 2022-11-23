@@ -4,18 +4,18 @@ import com.inha.coinkaraoke.exceptions.BadRequestException;
 import com.inha.coinkaraoke.gateway.GatewayUtils;
 import com.inha.coinkaraoke.services.coins.dto.MintRequest;
 import com.inha.coinkaraoke.services.coins.dto.TransferRequest;
-import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;
 import org.hyperledger.fabric.gateway.Gateway.Builder;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.Date;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -48,8 +48,7 @@ public class CoinHandler {
                         bytes = gatewayUtils.submit(contract, "transfer",
                                 receiverId, String.valueOf(new Date().getTime()), transferRequest.getAmounts());
                     }
-                    return ServerResponse.ok()
-                            .body(BodyInserters.fromValue(bytes));
+                    return ServerResponse.noContent().build();
                 })
                 .onErrorStop();
     }
@@ -71,13 +70,11 @@ public class CoinHandler {
                     String amounts = String.valueOf(mintRequest.getAmounts());
 
                     Builder builder = gatewayUtils.getBuilder(ADMIN_ORG, ADMIN_USER);
-                    byte[] bytes;
                     try (var gateway = builder.connect()) {
                         Contract contract = gatewayUtils.getContract(gateway, CHAINCODE_NAME, CONTRACT_NAME);
-                        bytes = gatewayUtils.submit(contract, "mint", amounts);
+                        gatewayUtils.submit(contract, "mint", amounts);
                     }
-                    return ServerResponse.ok()
-                            .body(BodyInserters.fromValue(bytes));
+                    return ServerResponse.noContent().build();
                 })
                 .onErrorStop();
     }
