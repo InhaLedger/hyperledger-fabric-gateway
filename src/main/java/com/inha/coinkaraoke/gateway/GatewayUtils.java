@@ -1,19 +1,22 @@
 package com.inha.coinkaraoke.gateway;
 
 import com.inha.coinkaraoke.config.NetworkConfigStore;
+import com.inha.coinkaraoke.config.cache.AOP.CacheEvict;
+import com.inha.coinkaraoke.config.cache.AOP.Cacheable;
 import com.inha.coinkaraoke.exceptions.ChainCodeException;
 import com.inha.coinkaraoke.services.users.WalletManager;
 import com.inha.coinkaraoke.services.users.exceptions.WalletProcessException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.fabric.gateway.Contract;
-import org.hyperledger.fabric.gateway.ContractException;
 import org.hyperledger.fabric.gateway.Gateway;
 import org.hyperledger.fabric.gateway.Wallet;
+import org.hyperledger.fabric.sdk.Channel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import java.io.IOException;
-import java.util.concurrent.TimeoutException;
 
 @Component
 @RequiredArgsConstructor
@@ -44,19 +47,41 @@ public class GatewayUtils {
                 .getContract(chaincode, contract);
     }
 
-    public byte[] query(Contract contract, String fxName, String... args) {
-        try {
-            return contract.evaluateTransaction(fxName, args);
-        } catch (ContractException e) {
-            throw new ChainCodeException(e.getMessage(), e.getCause());
-        }
+    @Cacheable
+    public Mono<byte[]> query(Contract contract, String fxName, String... args) {
+
+        return Mono.fromCallable(() -> contract.evaluateTransaction(fxName, args))
+                .log()
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorMap(e -> new ChainCodeException(e.getMessage(), e.getCause()));
     }
 
-    public byte[] submit(Contract contract, String fxName, String... args) {
-        try {
-            return contract.submitTransaction(fxName, args);
-        } catch (ContractException | TimeoutException | InterruptedException e) {
-            throw new ChainCodeException(e.getMessage(), e.getCause());
-        }
+    @CacheEvict
+    public Mono<byte[]> submit(Contract contract, String fxName, String... args) {
+
+        return Mono.fromCallable(() -> contract.submitTransaction(fxName, args))
+                .log()
+                .subscribeOn(Schedulers.boundedElastic())
+                .onErrorMap(e -> new ChainCodeException(e.getMessage(), e.getCause()));
+    }
+
+    public void shutdown(Gateway gateway) {
+        Channel channel = gateway.getNetwork(CHANNEL_NAME).getChannel();
+        if (!channel.isShutdown())
+            channel.shutdown(true);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

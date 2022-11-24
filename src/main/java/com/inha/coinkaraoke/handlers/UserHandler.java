@@ -9,11 +9,10 @@ import com.inha.coinkaraoke.services.users.dto.UserRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;
-import org.hyperledger.fabric.gateway.Gateway.Builder;
+import org.hyperledger.fabric.gateway.Gateway;
 import org.hyperledger.fabric.gateway.Wallet;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -58,9 +57,9 @@ public class UserHandler {
     @NonNull
     public Mono<ServerResponse> deleteUser(ServerRequest request) {
 
-        return Mono.just(request.pathVariables())
-                .publishOn(Schedulers.boundedElastic())
+        return Mono.fromCallable(request::pathVariables)
                 .switchIfEmpty(Mono.error(new BadRequestException("path variables are empty")))
+                .publishOn(Schedulers.boundedElastic())
                 .flatMap(pathVariables -> {
                     String orgId = pathVariables.getOrDefault("orgId", DEFAULT_ORG_NAME);
                     String userId = pathVariables.get("userId");
@@ -78,22 +77,24 @@ public class UserHandler {
     @NonNull
     public Mono<ServerResponse> getUserAccountInfo(ServerRequest request) {
 
-        return Mono.just(request.pathVariables())
+
+        return Mono.fromCallable(request::pathVariables)
+                .log()
                 .switchIfEmpty(Mono.error(new BadRequestException("path variables are empty")))
-                .flatMap(pathVariables -> {
+                .publishOn(Schedulers.boundedElastic())
+                .map(pathVariables -> {
                     String orgId = pathVariables.getOrDefault("orgId", DEFAULT_ORG_NAME);
                     String userId = pathVariables.get("userId");
 
-                    Builder builder = gatewayUtils.getBuilder(orgId, userId);
-                    try (var gateway = builder.connect()) {
-                        Contract contract = gatewayUtils.getContract(gateway, CHAINCODE_NAME, CONTRACT_NAME);
-                        byte[] bytes = gatewayUtils.query(contract, "getAccount");
-
-                        return ServerResponse.ok()
-                                .body(BodyInserters.fromValue(bytes));
-                    }
+                    return gatewayUtils.getBuilder(orgId, userId);
                 })
-                .subscribeOn(Schedulers.boundedElastic())
+                .map(builder -> Mono.using(builder::connect, gateway->{
+                    Contract contract = gatewayUtils.getContract(gateway, CHAINCODE_NAME, CONTRACT_NAME);
+                    Mono<byte[]> query = gatewayUtils.query(contract, "getAccount");
+                    // 처리는 진작에 완료되는데, 커넥션 타임아웃 될 때까지 기다리는 듯함.
+                    return query;
+                }, Gateway::close))
+                .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
                 .onErrorStop();
     }
 

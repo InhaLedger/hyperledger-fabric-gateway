@@ -8,6 +8,6 @@ public class TransferRequest {
     private String senderId;
     private String senderOrg;
     private String receiverId;
-    private String amounts;
+    private Double amounts;
 
 }
