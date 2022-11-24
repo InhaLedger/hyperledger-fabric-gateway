@@ -9,7 +9,6 @@ import com.inha.coinkaraoke.services.users.dto.UserRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;
-import org.hyperledger.fabric.gateway.Gateway;
 import org.hyperledger.fabric.gateway.Wallet;
 import org.hyperledger.fabric_ca.sdk.HFCAClient;
 import org.springframework.stereotype.Component;
@@ -83,17 +82,12 @@ public class UserHandler {
                 .switchIfEmpty(Mono.error(new BadRequestException("path variables are empty")))
                 .publishOn(Schedulers.boundedElastic())
                 .map(pathVariables -> {
-                    String orgId = pathVariables.getOrDefault("orgId", DEFAULT_ORG_NAME);
                     String userId = pathVariables.get("userId");
 
-                    return gatewayUtils.getBuilder(orgId, userId);
-                })
-                .map(builder -> Mono.using(builder::connect, gateway->{
-                    Contract contract = gatewayUtils.getContract(gateway, CHAINCODE_NAME, CONTRACT_NAME);
-                    Mono<byte[]> query = gatewayUtils.query(contract, "getAccount");
+                    Contract contract = gatewayUtils.getConnection(userId, CHAINCODE_NAME, CONTRACT_NAME);
                     // 처리는 진작에 완료되는데, 커넥션 타임아웃 될 때까지 기다리는 듯함.
-                    return query;
-                }, Gateway::close))
+                    return gatewayUtils.query(contract, "getAccount");
+                })
                 .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
                 .onErrorStop();
     }
