@@ -16,7 +16,6 @@ services:
     volumes:
       - ./:/root
       - ./wallets:/wallets
-      - ../:/root/dev
         #environment:
         #      - ENV=docker    
         #    networks:

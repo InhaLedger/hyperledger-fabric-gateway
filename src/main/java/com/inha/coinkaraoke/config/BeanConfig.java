@@ -33,7 +33,6 @@ public class BeanConfig extends DelegatingWebFluxConfiguration {
             throws IOException, NetworkConfigurationException {
 
         return new NetworkConfigStore.Builder()
-                .setClassPath()
                 .addConfigFile("Org1", Path.of(FileUtils.getUserDirectoryPath(), org1NetworkConfig).toString())
                 .build();
     }

@@ -78,13 +78,7 @@ public class NetworkConfigStore {
 
             for (var entry : this.configFiles.entrySet()) {
 
-                File configFile;
-                if (this.classpath) {
-                    configFile = ResourceUtils.getFile(entry.getValue());
-                } else {
-                    configFile = new File(entry.getValue());
-                }
-
+                File configFile = ResourceUtils.getFile(entry.getValue());
                 configStore.addNetworkConfig(entry.getKey(), configFile);
             }
 
