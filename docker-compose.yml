@@ -1,0 +1,24 @@
+version: "3"
+
+  #networks:
+  #  coinkaraoke:
+  #    name: fabric_peers
+  #    external: true
+
+
+services:
+  gateway:
+    build: .
+      #    hostname: gateway
+    container_name: gateway
+      #    ports:
+      #      - 8080:8080
+    volumes:
+      - ./:/root
+      - ./wallets:/wallets
+      - ../:/root/dev
+        #environment:
+        #      - ENV=docker    
+        #    networks:
+      #      - coinkaraoke
+    network_mode: "host"
