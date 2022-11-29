@@ -1,7 +1,5 @@
 package com.inha.coinkaraoke.gateway;
 
-import com.inha.coinkaraoke.config.cache.AOP.CacheEvict;
-import com.inha.coinkaraoke.config.cache.AOP.Cacheable;
 import com.inha.coinkaraoke.exceptions.ChainCodeException;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.fabric.gateway.Contract;
@@ -26,7 +24,7 @@ public class GatewayUtils {
         return connection.getContract(chaincodeId, contractName);
     }
 
-    @Cacheable
+//    @Cacheable
     public Mono<byte[]> query(Contract contract, String fxName, String... args) {
 
         return Mono.fromCallable(() -> contract.evaluateTransaction(fxName, args))
@@ -35,7 +33,7 @@ public class GatewayUtils {
                 .onErrorMap(e -> new ChainCodeException(e.getMessage(), e.getCause()));
     }
 
-    @CacheEvict
+//    @CacheEvict
     public Mono<byte[]> submit(Contract contract, String fxName, String... args) {
 
         return Mono.fromCallable(() -> contract.submitTransaction(fxName, args))
