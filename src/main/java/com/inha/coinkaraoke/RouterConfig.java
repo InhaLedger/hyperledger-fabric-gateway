@@ -7,6 +7,7 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 import com.inha.coinkaraoke.handlers.CoinHandler;
+import com.inha.coinkaraoke.handlers.ProposalHandler;
 import com.inha.coinkaraoke.handlers.UserHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -22,27 +23,33 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 @RequiredArgsConstructor
 public class RouterConfig extends DelegatingWebFluxConfiguration {
 
-    private final UserHandler userHandler;
-    private final CoinHandler coinHandler;
-
     @Bean
-    public RouterFunction<ServerResponse> router() {
+    public RouterFunction<ServerResponse> router(
+            final UserHandler userHandler,
+            final CoinHandler coinHandler,
+            final ProposalHandler proposalHandler
+    ) {
         return route()
-                .add(this.userRouter())
-                .add(this.coinRouter())
+                .add(this.userRouter(userHandler))
+                .add(this.coinRouter(coinHandler))
+                .add(this.proposalRouter(proposalHandler))
                 .build();
     }
 
 
-    private RouterFunction<ServerResponse> userRouter() {
+    private RouterFunction<ServerResponse> userRouter(final UserHandler handler) {
         return route(POST("/users")
-                        .and(accept(MediaType.APPLICATION_JSON)), userHandler::createUser)
-                .andRoute(DELETE("/users/{orgId}/{userId}"), userHandler::deleteUser)
-                .andRoute(GET("/users/{orgId}/{userId}/account"), userHandler::getUserAccountInfo);
+                        .and(accept(MediaType.APPLICATION_JSON)), handler::createUser)
+                .andRoute(DELETE("/users/{orgId}/{userId}"), handler::deleteUser)
+                .andRoute(GET("/users/{orgId}/{userId}/account"), handler::getUserAccountInfo);
     }
 
-    private RouterFunction<ServerResponse> coinRouter() {
-        return route(POST("/coins").and(accept(MediaType.APPLICATION_JSON)), coinHandler::transfer)
-                .andRoute(POST("/coins/new").and(accept(MediaType.APPLICATION_JSON)), coinHandler::mint);
+    private RouterFunction<ServerResponse> coinRouter(final CoinHandler handler) {
+        return route(POST("/coins").and(accept(MediaType.APPLICATION_JSON)), handler::transfer)
+                .andRoute(POST("/coins/new").and(accept(MediaType.APPLICATION_JSON)), handler::mint);
+    }
+
+    private RouterFunction<ServerResponse> proposalRouter(final ProposalHandler handler) {
+        return route(POST("/proposal").and(accept(MediaType.APPLICATION_JSON)), handler::createProposal);
     }
 }
