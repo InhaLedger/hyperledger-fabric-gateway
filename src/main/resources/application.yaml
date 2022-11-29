@@ -2,7 +2,7 @@ fabric:
   network:
     channel: "mychannel"
     config:
-      Org1: "./config/connection-org1.json"
+      Org1: "fabric/organizations/peerOrganizations/org1.coinkaraoke.com/connection-org1.yaml"
 
 spring:
   redis:
