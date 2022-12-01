@@ -38,8 +38,7 @@ public class RouterConfig extends DelegatingWebFluxConfiguration {
 
 
     private RouterFunction<ServerResponse> userRouter(final UserHandler handler) {
-        return route(POST("/users")
-                        .and(accept(MediaType.APPLICATION_JSON)), handler::createUser)
+        return route(POST("/users").and(accept(MediaType.APPLICATION_JSON)), handler::createUser)
                 .andRoute(DELETE("/users/{orgId}/{userId}"), handler::deleteUser)
                 .andRoute(GET("/users/{orgId}/{userId}/account"), handler::getUserAccountInfo);
     }
@@ -50,6 +49,8 @@ public class RouterConfig extends DelegatingWebFluxConfiguration {
     }
 
     private RouterFunction<ServerResponse> proposalRouter(final ProposalHandler handler) {
-        return route(POST("/proposal").and(accept(MediaType.APPLICATION_JSON)), handler::createProposal);
+        return route(POST("/proposals").and(accept(MediaType.APPLICATION_JSON)), handler::createProposal)
+                .andRoute(GET("/proposals/{proposalId}/{type}"), handler::getProposal)
+                .andRoute(POST("/proposals/{proposalId}/{type}/votes"), handler::voteToProposal);
     }
 }
