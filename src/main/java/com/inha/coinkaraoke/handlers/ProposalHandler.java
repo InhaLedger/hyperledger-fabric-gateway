@@ -1,7 +1,9 @@
 package com.inha.coinkaraoke.handlers;
 
 import com.inha.coinkaraoke.exceptions.BadRequestException;
+import com.inha.coinkaraoke.exceptions.NotAllowedException;
 import com.inha.coinkaraoke.gateway.GatewayUtils;
+import com.inha.coinkaraoke.services.proposals.FinalizeRequest;
 import com.inha.coinkaraoke.services.proposals.ProposalRequest;
 import com.inha.coinkaraoke.services.proposals.VoteRequest;
 import java.util.UUID;
@@ -86,6 +88,27 @@ public class ProposalHandler {
                     return gatewayUtils.submit(contract, "vote", proposalId, type, amounts, timestamp);
                 })
                 .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
+                .onErrorStop();
+    }
+
+    /**
+     * This function must not be called from external. This function is designed to be fired
+     * whenever the time of {@code finalize_period} is passed. But for demonstration we opened this api end point.
+     */
+    public Mono<ServerResponse> callFinalize(ServerRequest request) {
+
+        return request.bodyToMono(FinalizeRequest.class)
+                .publishOn(Schedulers.boundedElastic())
+                .flatMap(finalizeRequest -> {
+                    if (finalizeRequest.from(ADMIN_USER))
+                    {
+                        Contract contract = gatewayUtils.getConnection(ADMIN_USER, CHAINCODE_NAME, CONTRACT_NAME);
+                        gatewayUtils.submit(contract, "finalize");
+                        return ServerResponse.noContent().build();
+                    }
+                    else
+                        return Mono.error(NotAllowedException::new);
+                })
                 .onErrorStop();
     }
 }
