@@ -4,6 +4,7 @@ import com.inha.coinkaraoke.exceptions.BadRequestException;
 import com.inha.coinkaraoke.gateway.GatewayUtils;
 import com.inha.coinkaraoke.services.proposals.ProposalRequest;
 import com.inha.coinkaraoke.services.proposals.VoteRequest;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;
@@ -35,10 +36,11 @@ public class ProposalHandler {
                             String userId = proposalRequest.getUserId();
                             Long timestamp = proposalRequest.getTimestamp();
                             String type = proposalRequest.getType();
+                            String proposalId = UUID.randomUUID().toString();
 
                             Contract connection = gatewayUtils.getConnection(userId, CHAINCODE_NAME,
                                     CONTRACT_NAME);
-                            return gatewayUtils.submit(connection, "createProposal", type,
+                            return gatewayUtils.submit(connection, "createProposal", proposalId, type,
                                     String.valueOf(timestamp));
                         })
                 .flatMap(submitResult->ServerResponse.ok().body(submitResult, byte[].class))
@@ -61,6 +63,7 @@ public class ProposalHandler {
                     Contract contract = gatewayUtils.getConnection(userId, CHAINCODE_NAME, CONTRACT_NAME);
                     return gatewayUtils.query(contract, "getProposal", proposalId, type);
                 })
+                .switchIfEmpty(Mono.error(new BadRequestException("proposal not exist")))
                 .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
                 .onErrorStop();
     }
