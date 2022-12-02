@@ -83,7 +83,7 @@ public class ProposalHandler {
                     String type = request.pathVariables().get("type");
 
                     Contract contract = gatewayUtils.getConnection(userId, CHAINCODE_NAME, CONTRACT_NAME);
-                    return gatewayUtils.query(contract, "getProposal", proposalId, type, amounts, timestamp);
+                    return gatewayUtils.submit(contract, "vote", proposalId, type, amounts, timestamp);
                 })
                 .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
                 .onErrorStop();
