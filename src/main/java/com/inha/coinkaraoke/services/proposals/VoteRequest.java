@@ -9,4 +9,5 @@ public class VoteRequest {
     private Double amounts;
     private String userId;
     private Long timestamp;
+    private VoteType type;
 }

@@ -6,7 +6,6 @@ import com.inha.coinkaraoke.gateway.GatewayUtils;
 import com.inha.coinkaraoke.services.proposals.FinalizeRequest;
 import com.inha.coinkaraoke.services.proposals.ProposalRequest;
 import com.inha.coinkaraoke.services.proposals.VoteRequest;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.hyperledger.fabric.gateway.Contract;
@@ -16,6 +15,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+
+import java.util.UUID;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -81,11 +82,12 @@ public class ProposalHandler {
                     String amounts = voteRequest.getAmounts().toString();
                     String userId = voteRequest.getUserId();
                     String timestamp = voteRequest.getTimestamp().toString();
+                    String voteType = voteRequest.getType().getType();
                     String proposalId = request.pathVariables().get("proposalId");
                     String type = request.pathVariables().get("type");
 
                     Contract contract = gatewayUtils.getConnection(userId, CHAINCODE_NAME, CONTRACT_NAME);
-                    return gatewayUtils.submit(contract, "vote", proposalId, type, amounts, timestamp);
+                    return gatewayUtils.submit(contract, "vote", proposalId, type, voteType, amounts, timestamp);
                 })
                 .flatMap(queryResult -> ServerResponse.ok().body(queryResult, byte[].class))
                 .onErrorStop();
