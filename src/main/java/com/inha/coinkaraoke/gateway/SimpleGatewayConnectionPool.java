@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -26,9 +27,11 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
 
     private final Map<String, GatewayConnection> connections = new ConcurrentHashMap<>(); // Key is UserId
 
-    private static final String DEFAULT_ORG = "Org1";
+    private final BlockEventChannel blockEventChannel;
 
+    private static final String DEFAULT_ORG = "Org1";
     private static final Integer MAX_CONNECTION = 30;
+    private static final String ADMIN_USER = "admin";
 
 
     @Override
@@ -55,6 +58,7 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
     public GatewayConnection addConnection(String userId, String orgId) {
 
         GatewayConnection connection = this.buildConnection(userId, orgId);
+        connection.addBlockListener(blockEventChannel.getListener());
 
         if (this.connections.size() == MAX_CONNECTION) {
             this.removeLastUsedConnection();
@@ -66,7 +70,12 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
 
     public GatewayConnection addConnection(String userId) {
 
-        return this.addConnection(userId, DEFAULT_ORG);
+        GatewayConnection gatewayConnection = this.addConnection(userId, DEFAULT_ORG);
+
+        if (Objects.equals(userId, ADMIN_USER))
+            gatewayConnection.addBlockListener(blockEventChannel.getListener());
+
+        return gatewayConnection;
     }
 
     private GatewayConnection buildConnection(String userId, String orgId) {

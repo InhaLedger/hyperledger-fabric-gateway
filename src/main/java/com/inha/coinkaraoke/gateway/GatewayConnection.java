@@ -2,8 +2,10 @@ package com.inha.coinkaraoke.gateway;
 
 import org.hyperledger.fabric.gateway.Contract;
 import org.hyperledger.fabric.gateway.Network;
+import org.hyperledger.fabric.sdk.BlockEvent;
 
 import java.util.Date;
+import java.util.function.Consumer;
 
 public class GatewayConnection {
 
@@ -35,5 +37,9 @@ public class GatewayConnection {
 
     public void close() {
         this.network.getGateway().close();
+    }
+
+    public Consumer<BlockEvent> addBlockListener(Consumer<BlockEvent> listener) {
+        return this.network.addBlockListener(listener);
     }
 }
