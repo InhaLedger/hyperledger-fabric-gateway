@@ -23,7 +23,6 @@ public class CoinHandler {
 
     private static final String CHAINCODE_NAME = "chaincode";
     private static final String CONTRACT_NAME = "AccountContract";
-    private static final String ADMIN_USER = "admin";
 
     private final GatewayUtils gatewayUtils;
 
@@ -59,8 +58,9 @@ public class CoinHandler {
                 .publishOn(Schedulers.boundedElastic())
                 .map(mintRequest -> {
                     String amounts = String.valueOf(mintRequest.getAmounts());
+                    String userId = mintRequest.getUserId();
 
-                    Contract contract = gatewayUtils.getConnection(ADMIN_USER, CHAINCODE_NAME, CONTRACT_NAME);
+                    Contract contract = gatewayUtils.getConnection(userId, CHAINCODE_NAME, CONTRACT_NAME);
                     return gatewayUtils.submit(contract, "mint", amounts);
                 })
                 .flatMap(submitResult -> ServerResponse.ok().body(submitResult, byte[].class))
