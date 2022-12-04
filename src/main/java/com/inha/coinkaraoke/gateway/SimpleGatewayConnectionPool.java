@@ -31,6 +31,7 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
 
     private static final String DEFAULT_ORG = "Org1";
     private static final Integer MAX_CONNECTION = 30;
+//    @Value("${admin}")
     private static final String ADMIN_USER = "admin";
 
 
@@ -58,7 +59,10 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
     public GatewayConnection addConnection(String userId, String orgId) {
 
         GatewayConnection connection = this.buildConnection(userId, orgId);
-        connection.addBlockListener(blockEventChannel.getListener());
+
+        if (Objects.equals(userId, ADMIN_USER)){
+            connection.addBlockListener(blockEventChannel.getListener());
+        }
 
         if (this.connections.size() == MAX_CONNECTION) {
             this.removeLastUsedConnection();
@@ -68,14 +72,10 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
         return connection;
     }
 
+    @Override
     public GatewayConnection addConnection(String userId) {
 
-        GatewayConnection gatewayConnection = this.addConnection(userId, DEFAULT_ORG);
-
-        if (Objects.equals(userId, ADMIN_USER))
-            gatewayConnection.addBlockListener(blockEventChannel.getListener());
-
-        return gatewayConnection;
+        return this.addConnection(userId, DEFAULT_ORG);
     }
 
     private GatewayConnection buildConnection(String userId, String orgId) {
