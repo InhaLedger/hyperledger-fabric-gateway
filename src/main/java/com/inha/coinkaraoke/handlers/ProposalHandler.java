@@ -100,17 +100,16 @@ public class ProposalHandler {
     public Mono<ServerResponse> callFinalize(ServerRequest request) {
 
         return request.bodyToMono(FinalizeRequest.class)
+                .filter(finalizeRequest -> finalizeRequest.from(ADMIN_USER))
+                .switchIfEmpty(Mono.error(NotAllowedException::new))
                 .publishOn(Schedulers.boundedElastic())
-                .flatMap(finalizeRequest -> {
-                    if (finalizeRequest.from(ADMIN_USER))
-                    {
-                        Contract contract = gatewayUtils.getConnection(ADMIN_USER, CHAINCODE_NAME, CONTRACT_NAME);
-                        gatewayUtils.submit(contract, "finalize");
-                        return ServerResponse.noContent().build();
-                    }
-                    else
-                        return Mono.error(NotAllowedException::new);
+                .map(finalizeRequest -> {
+
+                    Contract contract = gatewayUtils.getConnection(ADMIN_USER, CHAINCODE_NAME, CONTRACT_NAME);
+                    return gatewayUtils.submit(contract, "finalize",
+                            finalizeRequest.getTimestamp(), finalizeRequest.getRewardPerProposal(), finalizeRequest.getBatchSize());
                 })
+                .flatMap(result -> ServerResponse.ok().body(result, Integer.class))
                 .onErrorStop();
     }
 }
