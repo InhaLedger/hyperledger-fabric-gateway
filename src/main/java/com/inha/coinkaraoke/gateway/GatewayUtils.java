@@ -12,6 +12,13 @@ import reactor.core.scheduler.Schedulers;
 public class GatewayUtils {
 
     private final GatewayConnectionPool connectionPool;
+    private final EventListenConnectionPool eventListenConnectionPool;
+
+    public void addListener(String channel) {
+        if (!eventListenConnectionPool.isListeningTo(channel)) {
+            eventListenConnectionPool.createFor(channel);
+        }
+    }
 
     public Contract getConnection(String userId, String chaincodeId, String contractName) {
 

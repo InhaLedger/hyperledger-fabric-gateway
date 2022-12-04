@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
@@ -22,24 +21,18 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
 
     @Value("${fabric.network.channel}")
     private String CHANNEL_NAME; // static 으로 하면 설정파일에서 못 읽고, 하드코딩 해야함.
-    private final WalletManager walletManager;
-    private final NetworkConfigStore networkConfigStore;
-
-    private final Map<String, GatewayConnection> connections = new ConcurrentHashMap<>(); // Key is UserId
-
-    private final BlockEventChannel blockEventChannel;
-
     private static final String DEFAULT_ORG = "Org1";
     private static final Integer MAX_CONNECTION = 30;
-//    @Value("${admin}")
-    private static final String ADMIN_USER = "admin";
+    private final Map<String, GatewayConnection> connections = new ConcurrentHashMap<>(); // Key is UserId
+
+    private final WalletManager walletManager;
+    private final NetworkConfigStore networkConfigStore;
 
 
     @Override
     public GatewayConnection findConnection(String userId) {
 
         if (this.connections.containsKey(userId)) {
-
             GatewayConnection network = this.connections.get(userId);
 
             if (network.isShutdown()) {
@@ -50,7 +43,6 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
                 return network;
             }
         }
-
         return null;
     }
 
@@ -59,10 +51,6 @@ public class SimpleGatewayConnectionPool implements GatewayConnectionPool {
     public GatewayConnection addConnection(String userId, String orgId) {
 
         GatewayConnection connection = this.buildConnection(userId, orgId);
-
-        if (Objects.equals(userId, ADMIN_USER)){
-            connection.addBlockListener(blockEventChannel.getListener());
-        }
 
         if (this.connections.size() == MAX_CONNECTION) {
             this.removeLastUsedConnection();

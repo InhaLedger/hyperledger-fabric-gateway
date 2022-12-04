@@ -1,7 +1,6 @@
 package com.inha.coinkaraoke.gateway;
 
 
-import java.util.function.Consumer;
 import org.hyperledger.fabric.sdk.BlockEvent;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -9,6 +8,7 @@ import reactor.core.publisher.Sinks;
 import reactor.core.publisher.Sinks.EmitFailureHandler;
 import reactor.core.publisher.Sinks.Many;
 import reactor.util.concurrent.Queues;
+import java.util.function.Consumer;
 
 @Component
 public class BlockEventChannel {

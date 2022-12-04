@@ -45,6 +45,6 @@ public class RouterConfig extends DelegatingWebFluxConfiguration {
 
     @Bean
     public RouterFunction<ServerResponse> blockRouter(final BlockEventHandler handler) {
-        return route(GET("/blocks"), handler::getBlockStreams);
+        return route(GET("/blocks/{channel}"), handler::getBlockStreams);
     }
 }

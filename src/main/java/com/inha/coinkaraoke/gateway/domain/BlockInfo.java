@@ -4,6 +4,8 @@ import lombok.Getter;
 import org.hyperledger.fabric.protos.common.Common;
 import org.hyperledger.fabric.sdk.BlockEvent;
 
+import java.util.Objects;
+
 @Getter
 public class BlockInfo {
 
@@ -21,5 +23,18 @@ public class BlockInfo {
         this.blockHeader = blockHeader;
         this.blockBody = blockBody;
         this.transactionCount = transactionCount;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof BlockInfo)) return false;
+        BlockInfo blockInfo = (BlockInfo) o;
+        return getBlockHeader().equals(blockInfo.getBlockHeader());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getBlockHeader());
     }
 }

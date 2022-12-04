@@ -1,6 +1,7 @@
 package com.inha.coinkaraoke.handlers;
 
 import com.inha.coinkaraoke.gateway.BlockEventChannel;
+import com.inha.coinkaraoke.gateway.GatewayUtils;
 import com.inha.coinkaraoke.gateway.domain.BlockInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,13 +23,18 @@ import java.util.Collections;
 public class BlockEventHandler {
 
     private final BlockEventChannel blockEventChannel;
+    private final GatewayUtils gatewayUtils;
 
     public Mono<ServerResponse> getBlockStreams(ServerRequest request) {
 
         Flux<BlockInfo> blockFlux = blockEventChannel.toFlux()
                 .log()
                 .publishOn(Schedulers.boundedElastic())
-                .map(BlockInfo::from);
+                .map(BlockInfo::from)
+                .distinct();
+
+        String channel = request.pathVariable("channel");
+        gatewayUtils.addListener(channel);
 
         final IReactiveDataDriverContextVariable dataDriver =
                 new ReactiveDataDriverContextVariable(blockFlux, 1, 1);
