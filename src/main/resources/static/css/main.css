@@ -1,0 +1,39 @@
+.container {
+    display: grid;
+}
+table {
+    border-collapse: separate;
+    border-spacing: 0 5px;
+    text-align: center;
+    display: table;
+    position: relative;
+    width: 100%;
+}
+tr {
+    min-height: 30px;
+    vertical-align: middle;
+}
+tr:hover td {
+    opacity:0.3;
+}
+td {
+    word-break:break-all;
+    font-size: 8pt;
+    width: auto;
+}
+td:first-child {
+    width: 40px;
+    border-top-left-radius: 10px;
+    border-bottom-left-radius: 10px;
+}
+td:last-child {
+    width: 60%;
+    border-bottom-right-radius: 10px;
+    border-top-right-radius: 10px;
+    justify-content: start;
+    text-align: left;
+    font-size: 5pt;
+}
+span.smtitle {
+    font-weight: bold;
+}
